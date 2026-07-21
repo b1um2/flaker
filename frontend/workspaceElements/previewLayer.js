@@ -5,20 +5,30 @@ import { vector2 } from '../dataStructures/vector2.js';
 export class previewLayer extends layer {
     #previewVertex;
     #vertexRadius;
+    #app;
     #virtualVertices = [];
     #selectedVertices = [];
 
-    constructor() {
+    constructor(app) {
         super();
+        this.#app = app;
         this.#vertexRadius = 7;
     }
 
     updatePreview(mouseX, mouseY, keys) {
         const previewVertexSVG = this.#previewVertex.getCircle();
-        const [snappedX, snappedY] = this.pixelsToSnappedPixels(mouseX, mouseY);
+        if (this.#app.getMode() == 'vertex') {
+            const [snappedX, snappedY] = this.pixelsToSnappedPixels(mouseX, mouseY);
         
-        previewVertexSVG.setAttribute("cx", snappedX);
-        previewVertexSVG.setAttribute("cy", snappedY);
+            previewVertexSVG.setAttribute("cx", snappedX);
+            previewVertexSVG.setAttribute("cy", snappedY);
+        } else if (this.#app.getMode() == 'edgeVertex') {
+            const [edge, edgeDist, edgeX, edgeY] = this.#app.getEdge(mouseX, mouseY);
+            const [snappedX, snappedY] = this.unitsToPixels(edgeX, edgeY);
+
+            previewVertexSVG.setAttribute("cx", snappedX);
+            previewVertexSVG.setAttribute("cy", snappedY);
+        }
     }
 
     initializePreviewVertex() {

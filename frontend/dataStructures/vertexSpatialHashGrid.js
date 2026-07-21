@@ -1,4 +1,4 @@
-export class spatialHashgrid {
+export class vertexSpatialHashgrid {
     #cellSize;
     #grid;
 

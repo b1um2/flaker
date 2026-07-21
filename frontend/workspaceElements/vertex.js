@@ -56,23 +56,25 @@ export class vertex {
 
     createEdge(vert) {
         const connectingEdge = new edge(this, vert, this.#layer);
+        return connectingEdge;
     }
 
     appendEdge(edge) {
         this.#edges.set(edge.getId(), edge);
+        console.log(edge.getId());
     }
 
     destroyEdge(id) {
         if (!this.#edges.has(id)) return;
         
-        this.#edges.get(id).destroy()
+        this.#edges.get(id).destroy();
         this.#edges.delete(id);
     }
 
     destroy() {
         if (this.#destroyed) return;
 
-        for (let id of this.#edges.keys()) {
+        for (let id of [...this.#edges.keys()]) {
             this.destroyEdge(id);
         }
 

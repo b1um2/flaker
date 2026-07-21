@@ -13,13 +13,14 @@ export class app {
     #currentLayer;
     #previewLayer;
     #layers = [];
+    #mode = 'vertex';
     #mouseX;
     #mouseY;
 
     selectedVertices = new Set();
 
     constructor() {
-        this.#previewLayer = new previewLayer();
+        this.#previewLayer = new previewLayer(this);
         this.#previewLayer.initializePreviewVertex();
 
         document.addEventListener("mousemove", (ev) => {
@@ -55,8 +56,28 @@ export class app {
         this.#mousemoveCallback = callback;
     }
 
+    setMode(mode) {
+        this.#mode = mode;
+    }
+   
+    getMode() {
+        return this.#mode;
+    }
+
     getCurrentLayer() {
         return this.#currentLayer;
+    }
+
+    getVertex(pixelsX, pixelsY) {
+        const [unitsX, unitsY] = currentLayer.pixelsToUnits(pixelsX, pixelsY);
+
+        return currentLayer.getVertex(unitsX, unitsY);
+    }
+
+    getEdge(pixelsX, pixelsY) {
+        const [unitsX, unitsY] = this.#currentLayer.pixelsToUnits(pixelsX, pixelsY);
+
+        return this.#currentLayer.getEdge(unitsX, unitsY);
     }
 
     getKeyStr() {

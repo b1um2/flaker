@@ -1,0 +1,21 @@
+# 1. Dependencies
+node_modules/
+
+# 2. Environment Variables & Secrets
+.env
+.env.local
+*.env
+
+# 3. NPM Logs
+*.log
+npm-debug.log*
+
+# 4. OS Files (Windows & macOS)
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# 5. IDE & Editor Folders
+.vscode/
+.idea/

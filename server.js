@@ -3,10 +3,10 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, 'fontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 app.get('/canvas', (req, res) => {
-  res.sendFile(path.join(__dirname, 'fontend', 'canvas', 'canvas.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'canvas', 'canvas.html'));
 });
 
 app.post('/api/add-vertex', (req, res) => {

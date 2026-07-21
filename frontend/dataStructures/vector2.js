@@ -1,14 +1,24 @@
 export class vector2 {
     #x = 0;
     #y = 0;
+    #magnitude;
 
     constructor(x, y) {
         this.#x = x;
         this.#y = y;
+        this.#magnitude = Math.sqrt(x**2 + y**2);
     }
 
     getCoords() {
         return [this.#x, this.#y];
+    }
+
+    getMagnitude() {
+        return this.#magnitude;
+    }
+
+    getUnitVector() {
+        return new vector2(this.#x/this.#magnitude, this.#y/this.#magnitude);
     }
 
     add(vector) {

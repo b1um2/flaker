@@ -7,6 +7,7 @@ export class edge {
     #id;
     #line;
     #destroyed = false;
+    #edgeVertices = new Set();
 
     constructor(vert1, vert2, parentLayer) {
         this.#vert1 = vert1;
@@ -31,20 +32,40 @@ export class edge {
 
         svgMapHolder.appendChild(line);
 
+        this.#line = line;
+        this.#id = id;
+
         vert1.appendEdge(this);
         vert2.appendEdge(this);
-
-        this.#line = line;
-
-        console.log(this.#line);
     }
 
     static getUniqueId(vert1, vert2) {
-        return `${Math.min([vert1.getId(), vert2.getId()])},${Math.max([vert1.getId(), vert2.getId()])}`;
+        const id1 = vert1.getId();
+        const id2 = vert2.getId();
+        return `${Math.min(id1, id2)},${Math.max(id1, id2)}`;
     }
 
     getId() {
         return this.#id;
+    }
+
+    getVertices() {
+        return [this.#vert1, this.#vert2];
+    }
+
+    appendEdgeVertex(edgeVertex) {
+        this.#edgeVertices.add(edgeVertex);
+    }
+
+    deleteEdgeVertex(edgeVertex) {
+        this.#edgeVertices.delete(edgeVertex);
+    }
+
+    clearEdgeVertices() {
+        for (let vert of this.#edgeVertices.values()) {
+            vert.destroy();
+            this.deleteEdgeVertex(vert);
+        }
     }
 
     redraw() {
@@ -61,10 +82,11 @@ export class edge {
     destroy() {
         if (this.#destroyed) return;
 
+        this.clearEdgeVertices();
         this.#line.remove();
         this.#destroyed = true;
         this.#parentLayer = null;
-        this.#vert1.destroyEdge(this.id);
-        this.#vert2.destroyEdge(this.id);
+        this.#vert1.destroyEdge(this.#id);
+        this.#vert2.destroyEdge(this.#id);
     }
 }

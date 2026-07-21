@@ -1,11 +1,45 @@
 export const keybinds = {
+    vertexMode : {
+        key : ['1'],
+
+        upFunc : (app) => {
+            app.setMode('vertex');
+
+            console.log('entered vert mode');
+        },
+
+        downFunc : (app) => {
+            
+        }
+    },
+
+    edgeVertexMode : {
+        key : ['2'],
+
+        upFunc : (app) => {
+            app.setMode('edgeVertex');
+            console.log('entered edge vert mode');
+        },
+
+        downFunc : (app) => {
+            
+        }
+    },
+
     spawn : {
         key : ['e'],
 
         upFunc : (app) => {
             const currentLayer = app.getCurrentLayer();
-            const [x, y] = app.getMouseCoords()
-            currentLayer.createVertexFromPixelPos(x, y);
+            const [mouseX, mouseY] = app.getMouseCoords();
+            if (app.getMode() == 'vertex') {
+                currentLayer.createVertexFromPixelPos(mouseX, mouseY);
+            } else if (app.getMode() == 'edgeVertex') {
+                const [edge, dist, x, y] = app.getEdge(mouseX, mouseY);
+
+                currentLayer.createEdgeVertex(x, y, edge);
+            }
+            
         },
 
         downFunc : (app) => {
@@ -25,8 +59,6 @@ export const keybinds = {
             app.clearSelectedVertices();
             if (vert)
                 app.selectVertex(vert);
-            
-            console.log(app.selectedVertices);
         },
 
         downFunc : (app) => {
