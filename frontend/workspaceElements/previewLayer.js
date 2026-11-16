@@ -1,39 +1,49 @@
-import {layer} from './layer.js';
-import {svgMapHolder, canvas} from '../dataStructures/utils.js';
-import { vector2 } from '../dataStructures/vector2.js';
+import { layer } from './layer.js';
 
 export class previewLayer extends layer {
     #previewVertex;
-    #vertexRadius;
+    #vertexRadius = 7;
     #app;
-    #virtualVertices = [];
-    #selectedVertices = [];
 
     constructor(app) {
         super();
         this.#app = app;
-        this.#vertexRadius = 7;
     }
 
-    updatePreview(mouseX, mouseY, keys) {
-        const previewVertexSVG = this.#previewVertex.getCircle();
-        if (this.#app.getMode() == 'vertex') {
+    updatePreview(mouseX, mouseY) {
+        const circle = this.#previewVertex.getCircle();
+
+        if (this.#app.getMode() == 'vertex' || this.#app.getMode() == 'furniture') {
             const [snappedX, snappedY] = this.pixelsToSnappedPixels(mouseX, mouseY);
-        
-            previewVertexSVG.setAttribute("cx", snappedX);
-            previewVertexSVG.setAttribute("cy", snappedY);
+
+            circle.setAttribute("cx", snappedX);
+            circle.setAttribute("cy", snappedY);
+            circle.setAttribute("visibility", "visible");
         } else if (this.#app.getMode() == 'edgeVertex') {
             const [edge, edgeDist, edgeX, edgeY] = this.#app.getEdge(mouseX, mouseY);
-            const [snappedX, snappedY] = this.unitsToPixels(edgeX, edgeY);
 
-            previewVertexSVG.setAttribute("cx", snappedX);
-            previewVertexSVG.setAttribute("cy", snappedY);
+            if (edge == null) {
+                circle.setAttribute("visibility", "hidden");
+                return;
+            }
+
+            const [pixelsX, pixelsY] = this.unitsToPixels(edgeX, edgeY);
+
+            circle.setAttribute("cx", pixelsX);
+            circle.setAttribute("cy", pixelsY);
+            circle.setAttribute("visibility", "visible");
+        } else {
+            circle.setAttribute("visibility", "hidden");
         }
     }
 
     initializePreviewVertex() {
         this.#previewVertex = this.createVertex(0, 0);
-        this.#previewVertex.getCircle().setAttribute("fill", "#28353a99");
+
+        const circle = this.#previewVertex.getCircle();
+        circle.setAttribute("class", "vertex preview-vertex");
+        circle.setAttribute("fill", "#28353a99");
+        circle.setAttribute("visibility", "hidden");
     }
 
     getPreviewVertex() {
@@ -42,9 +52,5 @@ export class previewLayer extends layer {
 
     getVertexRadius() {
         return this.#vertexRadius;
-    }
-
-    createVirtualVertex() {
-        return new vertex(0, 0, this);
     }
 }

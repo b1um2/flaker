@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>chat</title>
+    <title>Flaker</title>
     <link rel="stylesheet" href="canvas.css">
 </head>
 <body>
@@ -14,8 +14,23 @@
             <svg id="canvas-svg"></svg>
         </div>
 
-        <div id="tool-select">
+        <div id="furniture-menu">
+            <h2>Furniture</h2>
+            <div id="furniture-list"></div>
+            <p class="furniture-hint"><kbd>E</kbd> place &middot; <kbd>R</kbd> rotate selected</p>
+        </div>
 
+        <div id="tool-select">
+            <button type="button" class="active" data-mode="vertex">Vertex <kbd>1</kbd></button>
+            <button type="button" data-mode="edge">Edge <kbd>2</kbd></button>
+            <button type="button" data-mode="edgeVertex">Door / Window <kbd>3</kbd></button>
+            <button type="button" data-mode="furniture">Furniture <kbd>4</kbd></button>
+            <span id="hint"><kbd>E</kbd> place &middot; <kbd>F</kbd> connect &middot; <kbd>R</kbd> rotate &middot; <kbd>Del</kbd> remove &middot; scroll to zoom &middot; middle-drag to pan</span>
+            <div id="zoom-controls">
+                <button type="button" id="zoom-out" title="Zoom out (-)">&minus;</button>
+                <button type="button" id="zoom-in" title="Zoom in (+)">+</button>
+                <button type="button" id="zoom-reset" title="Reset view (0)">Reset</button>
+            </div>
         </div>
     </div>
 

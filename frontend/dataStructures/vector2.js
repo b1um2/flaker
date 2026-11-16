@@ -18,6 +18,9 @@ export class vector2 {
     }
 
     getUnitVector() {
+        if (this.#magnitude === 0)
+            return new vector2(0, 0);
+
         return new vector2(this.#x/this.#magnitude, this.#y/this.#magnitude);
     }
 
@@ -42,7 +45,7 @@ export class vector2 {
     cross(vector) {
         const [x, y] = vector.getCoords();
 
-        return this.#x*y + this.#y*x;
+        return this.#x*y - this.#y*x;
     }
 
     scalar(num) {

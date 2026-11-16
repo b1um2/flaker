@@ -1,52 +1,90 @@
-import { svgMapHolder } from "../dataStructures/utils.js";
+import { edgeGroup, SVG_NS } from "../dataStructures/utils.js";
 import { vertex } from "./vertex.js";
 import { vector2 } from "../dataStructures/vector2.js";
 
 export class edgeVertex extends vertex {
     #widthAlongLine;
+    #positionAlongLine;
     #line;
     #edge;
 
     constructor(x, y, widthAlongLine, edge, parentLayer) {
         super(x, y, parentLayer);
 
-        const [vert1, vert2] = edge.getVertices();
-        const [x1, y1] = vert1.getCoords();
-        const [x2, y2] = vert2.getCoords();
+        this.#widthAlongLine = widthAlongLine;
+        this.#edge = edge;
 
-        const origin = new vector2(x, y);
-        const pos1 = new vector2(x1, y1);
-        const pos2 = new vector2(x2, y2);
-        const direction = pos2.sub(pos1).getUnitVector();
-        const linePos1 = origin.add(direction);
-        const linePos2 = origin.sub(direction);
+        const [edgeX, edgeY, dist, t] = edge.getNearestPoint(x, y);
+        this.#positionAlongLine = t;
 
-        const [lineX1, lineY1] = linePos1.getCoords();
-        const [lineX2, lineY2] = linePos2.getCoords();
+        const line = document.createElementNS(SVG_NS, "line");
 
-        const [pixelsX1, pixelsY1] = parentLayer.unitsToPixels(lineX1, lineY1);
-        const [pixelsX2, pixelsY2] = parentLayer.unitsToPixels(lineX2, lineY2);
-
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-
-        line.setAttribute("class", "edge");
-        line.setAttribute("id", `edge-id`);
-        line.setAttribute("x1", pixelsX1);
-        line.setAttribute("y1", pixelsY1);
-        line.setAttribute("x2", pixelsX2);
-        line.setAttribute("y2", pixelsY2);
+        line.setAttribute("class", "edge-vertex");
         line.setAttribute("stroke", "#ededed");
         line.setAttribute("stroke-width", "4");
+        line.setAttribute("stroke-linecap", "round");
 
-        svgMapHolder.appendChild(line);
+        edgeGroup.appendChild(line);
 
         this.#line = line;
+
+        this.#redrawMarker();
 
         edge.appendEdgeVertex(this);
     }
 
+    #redrawMarker() {
+        if (this.#edge == null) return;
+
+        const [x, y] = this.getCoords();
+        const [vert1, vert2] = this.#edge.getVertices();
+        const [x1, y1] = vert1.getCoords();
+        const [x2, y2] = vert2.getCoords();
+
+        const direction = new vector2(x2 - x1, y2 - y1).getUnitVector();
+        const halfWidth = this.#widthAlongLine / 2;
+        const [startX, startY] = new vector2(x, y).sub(direction.scalar(halfWidth)).getCoords();
+        const [endX, endY] = new vector2(x, y).add(direction.scalar(halfWidth)).getCoords();
+
+        const [pixelsStartX, pixelsStartY] = this.getLayer().unitsToPixels(startX, startY);
+        const [pixelsEndX, pixelsEndY] = this.getLayer().unitsToPixels(endX, endY);
+
+        this.#line.setAttribute("x1", pixelsStartX);
+        this.#line.setAttribute("y1", pixelsStartY);
+        this.#line.setAttribute("x2", pixelsEndX);
+        this.#line.setAttribute("y2", pixelsEndY);
+    }
+
+    moveTo(unitsX, unitsY) {
+        if (this.#edge == null) return;
+
+        const [edgeX, edgeY, dist, t] = this.#edge.getNearestPoint(unitsX, unitsY);
+        this.#positionAlongLine = t;
+
+        super.moveTo(edgeX, edgeY);
+        this.#redrawMarker();
+    }
+
+    // keeps the marker on the wall when one of the wall's vertices moves
+    updateFromEdge() {
+        if (this.#edge == null) return;
+
+        const [vert1, vert2] = this.#edge.getVertices();
+        const [x1, y1] = vert1.getCoords();
+        const [x2, y2] = vert2.getCoords();
+        const unitsX = x1 + (x2 - x1) * this.#positionAlongLine;
+        const unitsY = y1 + (y2 - y1) * this.#positionAlongLine;
+
+        super.moveTo(unitsX, unitsY);
+        this.#redrawMarker();
+    }
+
     destroy() {
+        if (this.#edge == null) return;
+
         this.#line.remove();
+        this.#edge.deleteEdgeVertex(this);
+        this.#edge = null;
 
         super.destroy();
     }

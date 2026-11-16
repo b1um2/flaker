@@ -125,25 +125,7 @@ export class edgeSpatialHashgrid {
     }
 
     getNearestPointOnEdge(x, y, edge) {
-        const [vertex1, vertex2] = edge.getVertices();
-        const [x1, y1] = vertex1.getCoords();
-        const [x2, y2] = vertex2.getCoords();
-
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const lengthSquared = dx ** 2 + dy ** 2;
-
-        let t = lengthSquared === 0
-            ? 0
-            : ((x - x1) * dx + (y - y1) * dy) / lengthSquared;
-
-        t = Math.max(0, Math.min(1, t));
-
-        const nearestX = x1 + t * dx;
-        const nearestY = y1 + t * dy;
-        const dist = Math.sqrt((x - nearestX) ** 2 + (y - nearestY) ** 2);
-
-        return [nearestX, nearestY, dist];
+        return edge.getNearestPoint(x, y);
     }
 
     getNearest(x, y, radius) {

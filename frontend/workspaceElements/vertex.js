@@ -1,7 +1,5 @@
-import {layer} from './layer.js';
-import {edge} from './edge.js';
-import {svgMapHolder, canvas} from '../dataStructures/utils.js';
-import { vector2 } from '../dataStructures/vector2.js';
+import { edge } from './edge.js';
+import { vertexGroup, SVG_NS } from '../dataStructures/utils.js';
 
 export class vertex {
     static #vertexId = 0;
@@ -17,7 +15,7 @@ export class vertex {
         const radius = parentLayer.getVertexRadius();
         const [pixelsX, pixelsY] = parentLayer.unitsToPixels(x, y); //get the actual pixels of where it should be
 
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const circle = document.createElementNS(SVG_NS, "circle");
         circle.setAttribute("class", "vertex");
         circle.setAttribute("id", `vertex-${vertex.#vertexId}`);
         circle.setAttribute("cx", pixelsX);
@@ -25,7 +23,7 @@ export class vertex {
         circle.setAttribute("fill", "#b4b4b4");
         circle.setAttribute("r", radius);
 
-        svgMapHolder.appendChild(circle);
+        vertexGroup.appendChild(circle);
 
         this.#edges = new Map();
         this.#circle = circle;
@@ -54,25 +52,69 @@ export class vertex {
         return this.#id;
     }
 
+    getHitRadius() {
+        return 0.4;
+    }
+
+    usesScreenSpaceHitRadius() {
+        return true;
+    }
+
+    canConnect() {
+        return true;
+    }
+
+    canRotate() {
+        return false;
+    }
+
+    setSelected(selected) {
+        if (selected) {
+            this.#circle.setAttribute("stroke", "#298dff");
+            this.#circle.setAttribute("stroke-width", 2);
+            this.#circle.setAttribute("r", this.#layer.getVertexRadius() + 2);
+        } else {
+            this.#circle.removeAttribute("stroke");
+            this.#circle.removeAttribute("stroke-width");
+            this.#circle.setAttribute("r", this.#layer.getVertexRadius());
+        }
+    }
+
     createEdge(vert) {
-        const connectingEdge = new edge(this, vert, this.#layer);
-        return connectingEdge;
+        return this.#layer.createEdge(this, vert);
     }
 
     appendEdge(edge) {
         this.#edges.set(edge.getId(), edge);
-        console.log(edge.getId());
     }
 
     destroyEdge(id) {
-        if (!this.#edges.has(id)) return;
-        
-        this.#edges.get(id).destroy();
+        const edge = this.#edges.get(id);
+        if (edge == null) return;
+
+        edge.destroy();
         this.#edges.delete(id);
+    }
+
+    moveTo(unitsX, unitsY) {
+        if (this.#destroyed) return;
+
+        this.#layer.updateVertex(this, unitsX, unitsY);
+
+        this.#x = unitsX;
+        this.#y = unitsY;
+
+        const [pixelsX, pixelsY] = this.#layer.unitsToPixels(unitsX, unitsY);
+        this.#circle.setAttribute("cx", pixelsX);
+        this.#circle.setAttribute("cy", pixelsY);
+
+        for (const edge of this.#edges.values())
+            edge.redraw();
     }
 
     destroy() {
         if (this.#destroyed) return;
+        this.#destroyed = true;
 
         for (let id of [...this.#edges.keys()]) {
             this.destroyEdge(id);
@@ -81,6 +123,5 @@ export class vertex {
         this.#circle.remove();
 
         this.#layer.removeVertex(this);
-        this.#destroyed = true;
     }
 }

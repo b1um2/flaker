@@ -5,21 +5,13 @@ const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'frontend')));
 
+app.get('/', (req, res) => {
+  res.redirect('/canvas/');
+});
+
 app.get('/canvas', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'canvas', 'canvas.html'));
 });
-
-app.post('/api/add-vertex', (req, res) => {
-  console.log(req)
-})
-
-app.post('/api/delete-vertex', (req, res) => {
-  console.log(req)
-})
-
-app.post('/api/update-vertex', (req, res) => {
-  console.log(req)
-})
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
