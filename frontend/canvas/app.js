@@ -5,9 +5,14 @@ import { svgMapHolder } from '../dataStructures/utils.js';
 
 const modifierOrder = ['Control', 'Shift', 'Alt', 'Meta'];
 const modifierKeys = new Set(modifierOrder);
+const minGridSize = 0.1;
+const maxGridSize = 3;
 
 export class app {
     #keybinds = new Map();
+    #modeKeybinds = new Map();
+    #modeKeybindSets = new Map();
+    #boundMode = null;
     #keysDown = new Set();
     #activeKeybinds = new Map();
     #currentLayer;
@@ -15,6 +20,7 @@ export class app {
     #layers = [];
     #mode = 'vertex';
     #furnitureType = 'couch';
+    #furnitureTypes = [];
     #mouseX = 0;
     #mouseY = 0;
     #mouseMoved = false;
@@ -56,6 +62,11 @@ export class app {
         });
 
         document.addEventListener("keydown", (ev) => {
+            const target = ev.target;
+
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT'))
+                return;
+
             if (ev.key === '=' || ev.key === '+') {
                 ev.preventDefault();
                 if (!ev.repeat) this.zoomIn();
@@ -153,7 +164,7 @@ export class app {
     }
 
     #isUiClick(ev) {
-        return ev.target.closest("#tool-select, #furniture-menu") != null;
+        return ev.target.closest("#tool-select, #furniture-menu, #keybind-panel, #keybind-open") != null;
     }
 
     #getZoomCenter(forceCenter = false) {
@@ -186,6 +197,11 @@ export class app {
         if (menu)
             menu.classList.toggle("visible", mode === 'furniture');
 
+        if (this.#boundMode !== mode) {
+            this.#bindModeKeybinds(mode);
+            this.#boundMode = mode;
+        }
+
         if (changed) {
             this.clearSelection();
             this.endDrag();
@@ -200,6 +216,23 @@ export class app {
 
         for (const button of document.querySelectorAll("#furniture-menu button"))
             button.classList.toggle("active", button.dataset.type === type);
+    }
+
+    registerFurnitureTypes(types) {
+        this.#furnitureTypes = types;
+    }
+
+    cycleFurnitureType(step) {
+        if (this.#furnitureTypes.length === 0) return;
+
+        let index = this.#furnitureTypes.indexOf(this.#furnitureType);
+
+        if (index === -1)
+            index = 0;
+
+        const nextIndex = (index + step + this.#furnitureTypes.length) % this.#furnitureTypes.length;
+
+        this.setFurnitureType(this.#furnitureTypes[nextIndex]);
     }
 
     getFurnitureType() {
@@ -294,6 +327,9 @@ export class app {
     }
 
     clearSelection() {
+        if (this.#drag != null)
+            this.#drag.collapseVert = null;
+
         this.clearSelectedVertices();
         this.clearSelectedEdges();
     }
@@ -337,7 +373,9 @@ export class app {
             this.selectVertex(vert);
         }
 
-        this.startDrag();
+        const collapseVert = this.selectedVertices.size > 1 ? vert : null;
+
+        this.startDrag(collapseVert);
     }
 
     rotateSelectedFurniture(degrees) {
@@ -347,7 +385,33 @@ export class app {
         }
     }
 
-    startDrag() {
+    resizeSelectedFurniture(step) {
+        for (const vert of this.selectedVertices) {
+            if (vert.canResize())
+                vert.resize(step);
+        }
+    }
+
+    setGridSize(units) {
+        const value = Number(units);
+
+        if (!Number.isFinite(value) || value <= 0) return;
+
+        const gridSize = Math.min(maxGridSize, Math.max(minGridSize, value));
+
+        layer.setGridSize(gridSize);
+
+        const slider = document.getElementById("grid-size-slider");
+        if (slider) slider.value = gridSize;
+
+        const input = document.getElementById("grid-size-input");
+        if (input) input.value = gridSize;
+
+        if (this.#mouseMoved)
+            this.#previewLayer.updatePreview(this.#mouseX, this.#mouseY);
+    }
+
+    startDrag(collapseVert = null) {
         if (this.selectedVertices.size === 0) return;
 
         const [pixelsX, pixelsY] = this.getMouseCoords();
@@ -357,7 +421,7 @@ export class app {
         for (const vert of this.selectedVertices)
             origins.set(vert, vert.getCoords());
 
-        this.#drag = { unitsX, unitsY, origins };
+        this.#drag = { unitsX, unitsY, origins, collapseVert };
     }
 
     updateDrag() {
@@ -370,12 +434,23 @@ export class app {
             unitsY - this.#drag.unitsY
         );
 
+        if (deltaX !== 0 || deltaY !== 0)
+            this.#drag.collapseVert = null;
+
         for (const [vert, [startX, startY]] of this.#drag.origins)
             vert.moveTo(startX + deltaX, startY + deltaY);
     }
 
     endDrag() {
+        const drag = this.#drag;
         this.#drag = null;
+
+        if (drag == null || drag.collapseVert == null) return;
+
+        const vert = drag.collapseVert;
+
+        this.clearSelection();
+        this.selectVertex(vert);
     }
 
     createLayer() {
@@ -387,6 +462,58 @@ export class app {
 
     createKeybind(keyStr, downFunc, upFunc) {
         this.#keybinds.set(keyStr, new keybind(keyStr, downFunc, upFunc, this));
+    }
+
+    registerModeKeybinds(mode, keybinds, legend) {
+        this.#modeKeybindSets.set(mode, { keybinds: keybinds, legend: legend });
+    }
+
+    #bindModeKeybinds(mode) {
+        this.#modeKeybinds.clear();
+        this.#activeKeybinds.clear();
+        this.endDrag();
+
+        const info = this.#modeKeybindSets.get(mode);
+
+        if (info != null) {
+            for (const actionName in info.keybinds) {
+                const action = info.keybinds[actionName];
+
+                for (const keyStr of action.key)
+                    this.#modeKeybinds.set(keyStr, new keybind(keyStr, action.downFunc, action.upFunc, this));
+            }
+        }
+
+        this.#renderKeybindLegend(info ? info.legend : []);
+    }
+
+    #renderKeybindLegend(rows) {
+        const panel = document.getElementById("keybind-panel-content");
+        if (panel == null) return;
+
+        panel.textContent = "";
+
+        for (const row of rows) {
+            const rowElement = document.createElement("div");
+            rowElement.className = "keybind-row";
+
+            const keysElement = document.createElement("span");
+            keysElement.className = "keybind-keys";
+
+            for (const key of row.keys) {
+                const keyElement = document.createElement("kbd");
+                keyElement.textContent = key;
+                keysElement.appendChild(keyElement);
+            }
+
+            const labelElement = document.createElement("span");
+            labelElement.className = "keybind-label";
+            labelElement.textContent = row.label;
+
+            rowElement.appendChild(keysElement);
+            rowElement.appendChild(labelElement);
+            panel.appendChild(rowElement);
+        }
     }
 
     #normalizeKey(key) {
@@ -405,7 +532,8 @@ export class app {
 
         if (modifierKeys.has(key)) return;
 
-        const kb = this.#keybinds.get(this.getKeyStr());
+        const keyStr = this.getKeyStr();
+        const kb = this.#modeKeybinds.get(keyStr) ?? this.#keybinds.get(keyStr);
 
         if (kb != null) {
             this.#activeKeybinds.set(key, kb);

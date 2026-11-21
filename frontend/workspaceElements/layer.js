@@ -20,7 +20,8 @@ export class layer {
     static #minViewScale = 0.2;
     static #maxViewScale = 20;
     static #dotsElement = null;
-    static #lastDotsScale = null;
+    static #lastDotsTileSize = null;
+    static #gridSize = new vector2(1, 1); //the grid size in units
 
     static getViewTransform() {
         return [layer.#viewScale, layer.#viewOffsetX, layer.#viewOffsetY];
@@ -30,6 +31,13 @@ export class layer {
         layer.#viewScale = scale;
         layer.#viewOffsetX = offsetX;
         layer.#viewOffsetY = offsetY;
+        layer.#applyViewTransform();
+    }
+
+    static setGridSize(units) {
+        if (!Number.isFinite(units) || units <= 0) return;
+
+        layer.#gridSize = new vector2(units, units);
         layer.#applyViewTransform();
     }
 
@@ -46,12 +54,13 @@ export class layer {
         if (dots == null) return;
 
         const [pixelsPerUnitX] = layer.#pixelsPerUnit.getCoords();
-        const tileSize = pixelsPerUnitX * layer.#viewScale;
+        const [gridX] = layer.#gridSize.getCoords();
+        const tileSize = pixelsPerUnitX * gridX * layer.#viewScale;
 
-        // Only rebuild the dot texture when the scale actually changes; panning
-        // just shifts the existing texture, which keeps dragging smooth.
-        if (layer.#lastDotsScale !== layer.#viewScale) {
-            layer.#lastDotsScale = layer.#viewScale;
+        // Only rebuild the dot texture when the tile size actually changes;
+        // panning just shifts the existing texture, which keeps dragging smooth.
+        if (layer.#lastDotsTileSize !== tileSize) {
+            layer.#lastDotsTileSize = tileSize;
 
             const dotRadius = Math.min(4, tileSize * 0.1);
 
@@ -68,10 +77,13 @@ export class layer {
     #edgeSpatialHashgrid = new edgeSpatialHashgrid();
     #edges = new Map();
     #vertexRadius = 4;
-    #gridSize = new vector2(1, 1); //the grid size in units
 
     getGridSize() {
-        return this.#gridSize;
+        return layer.#gridSize;
+    }
+
+    getGridSizeUnits() {
+        return layer.#gridSize.getCoords()[0];
     }
 
     getVertexRadius() {
@@ -153,7 +165,7 @@ export class layer {
     }
 
     snapToGrid(unitsX, unitsY) {
-        const [gridX, gridY] = this.#gridSize.getCoords();
+        const [gridX, gridY] = layer.#gridSize.getCoords();
 
         return [
                 Math.round(unitsX/gridX)*gridX, 

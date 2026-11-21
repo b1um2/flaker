@@ -68,6 +68,10 @@ export class vertex {
         return false;
     }
 
+    canResize() {
+        return false;
+    }
+
     setSelected(selected) {
         if (selected) {
             this.#circle.setAttribute("stroke", "#298dff");

@@ -1,5 +1,6 @@
 import { app } from './app.js';
 import { keybinds } from '../inputHandlers/keybinds.js';
+import { modeKeybinds } from '../inputHandlers/modeKeybinds.js';
 import { furnitureTypes } from '../workspaceElements/furnitureTypes.js';
 
 const application = new app();
@@ -7,6 +8,10 @@ const application = new app();
 const layer = application.createLayer();
 application.setCurrentLayer(layer);
 layer.resetView();
+
+for (const [mode, info] of Object.entries(modeKeybinds)) {
+    application.registerModeKeybinds(mode, info.keybinds, info.legend);
+}
 
 for (const actionName in keybinds) {
     const info = keybinds[actionName];
@@ -52,5 +57,40 @@ for (const [type, info] of Object.entries(furnitureTypes)) {
     furnitureList.appendChild(button);
 }
 
+application.registerFurnitureTypes(Object.keys(furnitureTypes));
 application.setFurnitureType(Object.keys(furnitureTypes)[0]);
+
+const gridSizeSlider = document.getElementById("grid-size-slider");
+const gridSizeInput = document.getElementById("grid-size-input");
+
+gridSizeSlider.addEventListener("input", () => {
+    application.setGridSize(gridSizeSlider.value);
+});
+
+gridSizeInput.addEventListener("change", () => {
+    application.setGridSize(gridSizeInput.value);
+});
+
+application.setGridSize(gridSizeInput.value);
+
+const keybindPanel = document.getElementById("keybind-panel");
+const keybindOpen = document.getElementById("keybind-open");
+const keybindClose = document.getElementById("keybind-close");
+
+function setKeybindPanelOpen(open) {
+    keybindPanel.classList.toggle("open", open);
+    keybindOpen.classList.toggle("visible", !open);
+}
+
+keybindClose.addEventListener("click", () => {
+    setKeybindPanelOpen(false);
+    keybindClose.blur();
+});
+
+keybindOpen.addEventListener("click", () => {
+    setKeybindPanelOpen(true);
+    keybindOpen.blur();
+});
+
+setKeybindPanelOpen(true);
 application.setMode('vertex');

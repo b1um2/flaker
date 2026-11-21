@@ -7,6 +7,7 @@ export class furnitureVertex extends vertex {
     #pixelsWidth;
     #pixelsHeight;
     #rotation = 0;
+    #scale = 1;
     #group;
     #outline;
 
@@ -65,7 +66,10 @@ export class furnitureVertex extends vertex {
     }
 
     getHitRadius() {
-        return Math.sqrt(this.#width ** 2 + this.#height ** 2) / 2 + 0.1;
+        const width = this.#width * this.#scale;
+        const height = this.#height * this.#scale;
+
+        return Math.sqrt(width ** 2 + height ** 2) / 2 + 0.1;
     }
 
     usesScreenSpaceHitRadius() {
@@ -80,8 +84,23 @@ export class furnitureVertex extends vertex {
         return true;
     }
 
+    canResize() {
+        return true;
+    }
+
+    getScale() {
+        return this.#scale;
+    }
+
     getRotation() {
         return this.#rotation;
+    }
+
+    resize(step) {
+        const scale = Math.round((this.#scale + step) * 100) / 100;
+
+        this.#scale = Math.min(2, Math.max(0.5, scale));
+        this.#updateTransform();
     }
 
     rotate(degrees) {
@@ -149,7 +168,7 @@ export class furnitureVertex extends vertex {
         const [unitsX, unitsY] = this.getCoords();
         const [pixelsX, pixelsY] = this.getLayer().unitsToPixels(unitsX, unitsY);
 
-        this.#group.setAttribute("transform", `translate(${pixelsX} ${pixelsY}) rotate(${this.#rotation})`);
+        this.#group.setAttribute("transform", `translate(${pixelsX} ${pixelsY}) rotate(${this.#rotation}) scale(${this.#scale})`);
     }
 
     destroy() {
